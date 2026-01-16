@@ -27,7 +27,12 @@ body.danger{
 }
 
 .screen{display:none;height:100vh}
-.active{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.active{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
 
 /* HUD */
 .hud{
@@ -36,11 +41,11 @@ body.danger{
   width:100%;
   padding:10px 14px;
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  z-index:10;
+  align-items:center;
   background:#ffffffcc;
   backdrop-filter:blur(6px);
+  z-index:10;
 }
 .hud-left{font-size:14px}
 .hud-center{font-size:18px;font-weight:700}
@@ -64,8 +69,8 @@ body.danger{
 }
 .choices{
   display:flex;
-  gap:20px;
   justify-content:center;
+  gap:20px;
 }
 .choice{
   width:140px;
@@ -82,7 +87,7 @@ body.danger{
 .correct{background:#22c55e!important}
 .wrong{background:#ef4444!important}
 
-/* Menu / Pause / Over */
+/* Common */
 button.primary{
   background:#2563eb;
   color:white;
@@ -105,6 +110,14 @@ button.primary{
   <button class="primary" onclick="startGame()">เริ่มเกม</button>
 </div>
 
+<!-- COUNTDOWN -->
+<div id="countdown" class="screen">
+  <div class="big" id="countNum">3</div>
+  <p>เตรียมพร้อม</p>
+  <br>
+  <button class="primary" onclick="skipCountdown()">ข้าม</button>
+</div>
+
 <!-- GAME -->
 <div id="game" class="screen">
   <div class="hud">
@@ -112,7 +125,9 @@ button.primary{
       ❤️ <span id="heart">3</span> |
       🏆 <span id="score">0</span>
     </div>
-    <div class="hud-center">⏱ <span id="time">10</span></div>
+    <div class="hud-center">
+      ⏱ <span id="time">10</span>
+    </div>
     <div class="hud-right">
       <button onclick="pauseGame()">หยุด</button>
     </div>
@@ -138,39 +153,76 @@ button.primary{
 <div id="over" class="screen">
   <div class="big">GAME OVER</div>
   <p>คะแนน: <span id="final"></span></p>
+  <br>
   <button class="primary" onclick="backMenu()">กลับเมนู</button>
 </div>
 
 <script>
 let score,heart,time,timer,paused=false;
-let correctIndex;
+let correctIndex,countdownTimer;
+
 const ops=["+","-","×","÷"];
 
 const soundCorrect=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3");
 const soundWrong=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3");
 
+const heartEl=document.getElementById("heart");
+const scoreEl=document.getElementById("score");
+const high=document.getElementById("high");
+const final=document.getElementById("final");
+
 function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
+/* Start */
 function startGame(){
-  score=0;heart=3;
-  show("game");
+  score=0;
+  heart=3;
+  paused=false;
   updateUI();
+  startCountdown();
+}
+
+/* Countdown */
+function startCountdown(){
+  show("countdown");
+  let n=3;
+  countNum.textContent=n;
+  countdownTimer=setInterval(()=>{
+    n--;
+    if(n<=0){
+      clearInterval(countdownTimer);
+      beginGame();
+    }else{
+      countNum.textContent=n;
+    }
+  },1000);
+}
+
+function skipCountdown(){
+  clearInterval(countdownTimer);
+  beginGame();
+}
+
+function beginGame(){
+  show("game");
   nextQuestion();
 }
 
+/* Difficulty */
 function difficulty(){
   if(score<5) return 1;
   if(score<15) return 2;
   return 3;
 }
 
+/* Question */
 function nextQuestion(){
   clearInterval(timer);
   time=10;
-  document.getElementById("time").textContent=time;
+  timeEl.textContent=time;
 
   const lvl=difficulty();
   const op=ops[Math.floor(Math.random()*(lvl+1))];
@@ -178,29 +230,31 @@ function nextQuestion(){
   let b=Math.floor(Math.random()*9*lvl)+1;
   let ans;
 
-  if(op==="÷"){ ans=a; a=a*b; }
+  if(op==="÷"){ ans=a; a=a*b.allow=0; }
   else if(op==="+") ans=a+b;
   else if(op==="-") ans=a-b;
   else ans=a*b;
 
-  document.getElementById("question").textContent=`${a} ${op} ${b}`;
+  question.textContent=`${a} ${op} ${b}`;
+
   const wrong=ans+Math.floor(Math.random()*5)+1;
   correctIndex=Math.random()<0.5?0:1;
-  document.getElementById("a").textContent=correctIndex===0?ans:wrong;
-  document.getElementById("b").textContent=correctIndex===1?ans:wrong;
+  aBtn.textContent=correctIndex===0?ans:wrong;
+  bBtn.textContent=correctIndex===1?ans:wrong;
 
   timer=setInterval(()=>{
     if(!paused){
       time--;
-      document.getElementById("time").textContent=time;
+      timeEl.textContent=time;
       if(time<=0) fail();
     }
   },1000);
 }
 
+/* Answer */
 function choose(i){
   if(paused) return;
-  const btn=i===0?document.getElementById("a"):document.getElementById("b");
+  const btn=i===0?aBtn:bBtn;
   if(i===correctIndex){
     soundCorrect.play();
     btn.classList.add("correct");
@@ -208,9 +262,12 @@ function choose(i){
     setTimeout(()=>btn.classList.remove("correct"),200);
     updateUI();
     nextQuestion();
-  }else fail();
+  }else{
+    fail();
+  }
 }
 
+/* Fail */
 function fail(){
   clearInterval(timer);
   soundWrong.play();
@@ -223,14 +280,17 @@ function fail(){
   else nextQuestion();
 }
 
+/* UI */
 function updateUI(){
   heartEl.textContent=heart;
   scoreEl.textContent=score;
 }
 
+/* Pause */
 function pauseGame(){ paused=true; show("pause"); }
 function resumeGame(){ paused=false; show("game"); }
 
+/* End */
 function endGame(){
   show("over");
   final.textContent=score;
@@ -243,10 +303,12 @@ function backMenu(){
   show("menu");
 }
 
-const heartEl=document.getElementById("heart");
-const scoreEl=document.getElementById("score");
-const final=document.getElementById("final");
-const high=document.getElementById("high");
+/* Init */
+const aBtn=document.getElementById("a");
+const bBtn=document.getElementById("b");
+const question=document.getElementById("question");
+const timeEl=document.getElementById("time");
+
 high.textContent=localStorage.getItem("high")||0;
 </script>
 </body>
