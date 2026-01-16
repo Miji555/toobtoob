@@ -2,89 +2,69 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>Math Combo Game</title>
 
 <style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background: linear-gradient(180deg,#020617,#0f172a);
-    color: #fff;
-    text-align: center;
-  }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+  background: linear-gradient(180deg,#020617,#0f172a);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  .screen { display: none; padding: 20px; }
-  .active { display: block; }
+.screen {
+  display: none;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+.active { display: block; }
 
-  h1 { margin-top: 60px; }
+h1,h2 { text-align: center; }
 
-  button {
-    padding: 14px 24px;
-    font-size: 18px;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-  }
+button {
+  width: 100%;
+  padding: 16px;
+  font-size: 20px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+}
 
-  .top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 16px;
-    margin-bottom: 20px;
-  }
+.choice {
+  background: #2563eb;
+  color: white;
+  font-size: 28px;
+}
 
-  .hearts { font-size: 20px; color: #ef4444; }
+.correct { background: #22c55e !important; }
+.wrong { background: #ef4444 !important; }
 
-  .question {
-    font-size: 32px;
-    margin: 30px 0;
-  }
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+}
 
-  .choices {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.hearts { color: #ef4444; }
+.boss { color: #f97316; }
 
-  .choice {
-    width: 100%;
-    max-width: 320px;
-    margin: auto;
-    font-size: 26px;
-    background: #2563eb;
-    color: white;
-  }
+.question {
+  font-size: 32px;
+  margin: 30px 0;
+  text-align: center;
+}
 
-  .correct {
-    animation: correctFlash 0.4s;
-    background: #22c55e !important;
-  }
+.stack { display: flex; flex-direction: column; gap: 14px; }
 
-  .wrong {
-    animation: wrongFlash 0.4s;
-    background: #ef4444 !important;
-  }
-
-  @keyframes correctFlash {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-  }
-
-  @keyframes wrongFlash {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-6px); }
-    50% { transform: translateX(6px); }
-    100% { transform: translateX(0); }
-  }
-
-  .stats {
-    display: flex;
-    justify-content: space-around;
-    font-size: 16px;
-  }
+.small { font-size: 14px; opacity: .8; text-align: center; }
 </style>
 </head>
 <body>
@@ -92,190 +72,191 @@
 <!-- MENU -->
 <div id="menu" class="screen active">
   <h1>Math Combo Game</h1>
+  <p class="small">High Score: <span id="highScore">0</span></p>
   <button onclick="startGame()">เริ่มเกม</button>
+  <button onclick="toggleSound()">🔊 เสียง: <span id="soundState">ON</span></button>
 </div>
 
 <!-- GAME -->
 <div id="game" class="screen">
   <div class="top">
     <div>⏱ <span id="time">10</span></div>
-    <div>⭐ Lv.<span id="level">1</span></div>
+    <div>Lv.<span id="level">1</span></div>
     <div class="hearts" id="hearts">❤️❤️❤️</div>
   </div>
 
-  <div class="stats">
+  <div class="top">
     <div>คะแนน <span id="score">0</span></div>
-    <div>คอมโบ x<span id="combo">0</span></div>
+    <div>🔥 x<span id="combo">0</span></div>
   </div>
+
+  <div id="bossBar" class="boss small"></div>
 
   <div class="question" id="question"></div>
 
-  <div class="choices">
+  <div class="stack">
     <button id="leftBtn" class="choice" onclick="choose('left')"></button>
     <button id="rightBtn" class="choice" onclick="choose('right')"></button>
+    <button onclick="pauseGame()">หยุด</button>
   </div>
-
-  <button style="margin-top:20px" onclick="pauseGame()">หยุด</button>
-</div>
-
-<!-- PAUSE -->
-<div id="pause" class="screen">
-  <h1>หยุดเกม</h1>
-  <button onclick="resumeGame()">เล่นต่อ</button>
-  <button onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <!-- GAME OVER -->
 <div id="over" class="screen">
-  <h1>เกมจบ</h1>
+  <h2>เกมจบ</h2>
   <p>คะแนน: <span id="finalScore"></span></p>
-  <p>เลเวลสูงสุด: <span id="finalLevel"></span></p>
+  <p>High Score: <span id="finalHigh"></span></p>
   <button onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <script>
-let score, combo, level, hearts;
-let time, timer;
-let correctSide;
-let paused = false;
+/* ===== SOUND ===== */
+const sndCorrect = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3");
+const sndWrong   = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3");
+const sndBoss    = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-arcade-bonus-alert-767.mp3");
+let soundOn = true;
 
-function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+/* ===== STATE ===== */
+let score, combo, level, hearts, time, timer;
+let correctSide, paused=false;
+let bossHP = 0;
+
+/* ===== UI ===== */
+const $ = id => document.getElementById(id);
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
 }
 
-function startGame() {
-  score = 0;
-  combo = 0;
-  level = 1;
-  hearts = 3;
+/* ===== GAME ===== */
+function startGame(){
+  score=0; combo=0; level=1; hearts=3;
   show('game');
-  updateUI();
   newQuestion();
+  updateUI();
 }
 
-function updateUI() {
-  scoreEl.textContent = score;
-  comboEl.textContent = combo;
-  levelEl.textContent = level;
-  heartsEl.textContent = "❤️".repeat(hearts);
+function updateUI(){
+  scoreEl.textContent=score;
+  comboEl.textContent=combo;
+  levelEl.textContent=level;
+  heartsEl.textContent="❤️".repeat(hearts);
 }
 
-function startTimer() {
+function startTimer(limit){
   clearInterval(timer);
-  time = Math.max(3, 10 - level);
-  timeEl.textContent = time;
-
-  timer = setInterval(() => {
-    if (!paused) {
+  time=limit;
+  timeEl.textContent=time;
+  timer=setInterval(()=>{
+    if(!paused){
       time--;
-      timeEl.textContent = time;
-      if (time <= 0) loseLife();
+      timeEl.textContent=time;
+      if(time<=0) loseLife();
     }
-  }, 1000);
+  },1000);
 }
 
-function randomQuestion() {
-  let max = 10 + level * 5;
-  let ops = ["+", "-"];
-  if (level >= 2) ops.push("×");
-  if (level >= 4) ops.push("÷");
+function randomQuestion(){
+  let max=10+level*5;
+  let ops=["+","-"];
+  if(level>=2) ops.push("×");
+  if(level>=4) ops.push("÷");
 
-  let op = ops[Math.floor(Math.random() * ops.length)];
-  let a = Math.floor(Math.random() * max) + 1;
-  let b = Math.floor(Math.random() * max) + 1;
+  let op=ops[Math.floor(Math.random()*ops.length)];
+  let a=Math.floor(Math.random()*max)+1;
+  let b=Math.floor(Math.random()*max)+1;
   let ans;
 
-  if (op === "+") ans = a + b;
-  if (op === "-") ans = a - b;
-  if (op === "×") ans = a * b;
-  if (op === "÷") {
-    ans = Math.floor(Math.random() * max) + 1;
-    b = Math.floor(Math.random() * max) + 1;
-    a = ans * b;
-  }
-  return { text: `${a} ${op} ${b} = ?`, answer: ans };
+  if(op==="+") ans=a+b;
+  if(op==="-") ans=a-b;
+  if(op==="×") ans=a*b;
+  if(op==="÷"){ ans=Math.floor(Math.random()*max)+1; b=Math.floor(Math.random()*max)+1; a=ans*b; }
+
+  return {text:`${a} ${op} ${b} = ?`,answer:ans};
 }
 
-function newQuestion() {
-  const q = randomQuestion();
-  question.textContent = q.text;
-
-  let wrong = q.answer + Math.floor(Math.random() * level + 1);
-  if (Math.random() < 0.5) {
-    correctSide = 'left';
-    leftBtn.textContent = q.answer;
-    rightBtn.textContent = wrong;
-  } else {
-    correctSide = 'right';
-    leftBtn.textContent = wrong;
-    rightBtn.textContent = q.answer;
+function newQuestion(){
+  const bossFight = level%5===0;
+  if(bossFight && bossHP===0){
+    bossHP=5;
+    sndBoss.play();
   }
-  startTimer();
+
+  bossBar.textContent = bossFight ? `🧟‍♂️ บอส HP: ${bossHP}` : "";
+
+  const q=randomQuestion();
+  question.textContent=q.text;
+  const wrong=q.answer+Math.floor(Math.random()*level+1);
+
+  if(Math.random()<0.5){
+    correctSide='left';
+    leftBtn.textContent=q.answer;
+    rightBtn.textContent=wrong;
+  }else{
+    correctSide='right';
+    leftBtn.textContent=wrong;
+    rightBtn.textContent=q.answer;
+  }
+
+  startTimer(bossFight?5:10);
 }
 
-function choose(side) {
-  if (paused) return;
+function choose(side){
+  if(paused) return;
+  const btn=side==='left'?leftBtn:rightBtn;
 
-  const btn = side === 'left' ? leftBtn : rightBtn;
-
-  if (side === correctSide) {
+  if(side===correctSide){
     btn.classList.add('correct');
-    score += 10;
-    combo++;
-    if (combo % 5 === 0) level++;
-    setTimeout(() => btn.classList.remove('correct'), 300);
-  } else {
-    btn.classList.add('wrong');
-    setTimeout(() => btn.classList.remove('wrong'), 300);
-    loseLife();
-    return;
-  }
+    if(soundOn) sndCorrect.play();
+    score+=10; combo++;
 
+    if(level%5===0){
+      bossHP--;
+      if(bossHP<=0){ level++; bossHP=0; }
+    }else if(combo%5===0){ level++; }
+
+    setTimeout(()=>btn.classList.remove('correct'),200);
+    newQuestion();
+  }else{
+    btn.classList.add('wrong');
+    if(soundOn) sndWrong.play();
+    setTimeout(()=>btn.classList.remove('wrong'),200);
+    loseLife();
+  }
   updateUI();
-  newQuestion();
 }
 
-function loseLife() {
-  hearts--;
-  combo = 0;
-  updateUI();
-  if (hearts <= 0) endGame();
+function loseLife(){
+  hearts--; combo=0;
+  if(hearts<=0) endGame();
   else newQuestion();
 }
 
-function pauseGame() {
-  paused = true;
-  show('pause');
-}
-
-function resumeGame() {
-  paused = false;
-  show('game');
-}
-
-function endGame() {
+function endGame(){
   clearInterval(timer);
-  finalScore.textContent = score;
-  finalLevel.textContent = level;
+  finalScore.textContent=score;
+  let hs=localStorage.getItem("mathHigh")||0;
+  if(score>hs){ hs=score; localStorage.setItem("mathHigh",hs); }
+  finalHigh.textContent=hs;
   show('over');
 }
 
-function goMenu() {
-  clearInterval(timer);
-  paused = false;
+function toggleSound(){
+  soundOn=!soundOn;
+  soundState.textContent=soundOn?"ON":"OFF";
+}
+
+function goMenu(){
+  highScore.textContent=localStorage.getItem("mathHigh")||0;
   show('menu');
 }
 
-/* element refs */
-const timeEl = document.getElementById('time');
-const scoreEl = document.getElementById('score');
-const comboEl = document.getElementById('combo');
-const levelEl = document.getElementById('level');
-const heartsEl = document.getElementById('hearts');
-const question = document.getElementById('question');
-const leftBtn = document.getElementById('leftBtn');
-const rightBtn = document.getElementById('rightBtn');
+/* refs */
+const timeEl=$("time"),scoreEl=$("score"),comboEl=$("combo"),
+levelEl=$("level"),heartsEl=$("hearts"),question=$("question"),
+leftBtn=$("leftBtn"),rightBtn=$("rightBtn"),bossBar=$("bossBar");
+
+highScore.textContent=localStorage.getItem("mathHigh")||0;
 </script>
 
 </body>
