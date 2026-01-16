@@ -1,23 +1,44 @@
 body {
   margin: 0;
-  overflow: hidden;
+  background: #111;
   font-family: sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
-#ui {
-  position: fixed;
-  bottom: 10px;
-  width: 100%;
+#game {
+  width: 300px;
   text-align: center;
 }
 
-input {
-  font-size: 18px;
-  width: 120px;
+#question {
+  font-size: 32px;
+  margin-bottom: 20px;
 }
 
-.buttons button {
-  font-size: 24px;
-  margin: 5px;
-  width: 80px;
+#blocks {
+  display: flex;
+  justify-content: space-between;
+}
+
+.block {
+  width: 120px;
+  height: 80px;
+  background: orange;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.left { background: #ff9f1c; }
+.right { background: #2ec4b6; }
+
+#score {
+  margin-top: 20px;
 }
