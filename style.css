@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+#ui {
+  position: fixed;
+  bottom: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+input {
+  font-size: 18px;
+  width: 120px;
+}
+
+.buttons button {
+  font-size: 24px;
+  margin: 5px;
+  width: 80px;
+}
