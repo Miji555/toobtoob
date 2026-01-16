@@ -2,203 +2,280 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Math Choice Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Combo Game</title>
+
 <style>
   body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: white;
+    font-family: system-ui, sans-serif;
+    background: linear-gradient(180deg,#020617,#0f172a);
+    color: #fff;
     text-align: center;
   }
 
-  .screen {
-    display: none;
-    padding: 40px;
-  }
-  .active {
-    display: block;
-  }
+  .screen { display: none; padding: 20px; }
+  .active { display: block; }
+
+  h1 { margin-top: 60px; }
 
   button {
-    padding: 14px 28px;
+    padding: 14px 24px;
     font-size: 18px;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
-  }
-
-  .choices {
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    margin-top: 30px;
-  }
-
-  .choice {
-    width: 160px;
-    font-size: 24px;
-    background: #2563eb;
-    color: white;
-  }
-
-  .choice:hover {
-    background: #1d4ed8;
   }
 
   .top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 20px;
+    font-size: 16px;
+    margin-bottom: 20px;
   }
 
-  .pause-btn {
-    background: #f59e0b;
-    color: black;
+  .hearts { font-size: 20px; color: #ef4444; }
+
+  .question {
+    font-size: 32px;
+    margin: 30px 0;
   }
 
-  .menu-btn {
-    background: #22c55e;
-    color: black;
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .choice {
+    width: 100%;
+    max-width: 320px;
+    margin: auto;
+    font-size: 26px;
+    background: #2563eb;
+    color: white;
+  }
+
+  .correct {
+    animation: correctFlash 0.4s;
+    background: #22c55e !important;
+  }
+
+  .wrong {
+    animation: wrongFlash 0.4s;
+    background: #ef4444 !important;
+  }
+
+  @keyframes correctFlash {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes wrongFlash {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    50% { transform: translateX(6px); }
+    100% { transform: translateX(0); }
+  }
+
+  .stats {
+    display: flex;
+    justify-content: space-around;
+    font-size: 16px;
   }
 </style>
 </head>
 <body>
 
-<!-- ===== MENU ===== -->
+<!-- MENU -->
 <div id="menu" class="screen active">
-  <h1>เกมคณิตศาสตร์</h1>
-  <p>เลือกคำตอบที่ถูก (ซ้าย / ขวา)</p>
-  <button class="menu-btn" onclick="startGame()">เริ่มเกม</button>
+  <h1>Math Combo Game</h1>
+  <button onclick="startGame()">เริ่มเกม</button>
 </div>
 
-<!-- ===== GAME ===== -->
+<!-- GAME -->
 <div id="game" class="screen">
   <div class="top">
-    <div>เวลา: <span id="time">10</span></div>
-    <div>คะแนน: <span id="score">0</span></div>
-    <button class="pause-btn" onclick="pauseGame()">หยุด</button>
+    <div>⏱ <span id="time">10</span></div>
+    <div>⭐ Lv.<span id="level">1</span></div>
+    <div class="hearts" id="hearts">❤️❤️❤️</div>
   </div>
 
-  <h2 id="question" style="margin-top:40px"></h2>
+  <div class="stats">
+    <div>คะแนน <span id="score">0</span></div>
+    <div>คอมโบ x<span id="combo">0</span></div>
+  </div>
+
+  <div class="question" id="question"></div>
 
   <div class="choices">
-    <button id="leftBtn" class="choice" onclick="choose('left')">0</button>
-    <button id="rightBtn" class="choice" onclick="choose('right')">0</button>
+    <button id="leftBtn" class="choice" onclick="choose('left')"></button>
+    <button id="rightBtn" class="choice" onclick="choose('right')"></button>
   </div>
+
+  <button style="margin-top:20px" onclick="pauseGame()">หยุด</button>
 </div>
 
-<!-- ===== PAUSE ===== -->
+<!-- PAUSE -->
 <div id="pause" class="screen">
   <h1>หยุดเกม</h1>
   <button onclick="resumeGame()">เล่นต่อ</button>
   <button onclick="goMenu()">กลับเมนู</button>
 </div>
 
-<!-- ===== GAME OVER ===== -->
+<!-- GAME OVER -->
 <div id="over" class="screen">
-  <h1>หมดเวลา</h1>
-  <p>คะแนนของคุณ: <span id="finalScore"></span></p>
+  <h1>เกมจบ</h1>
+  <p>คะแนน: <span id="finalScore"></span></p>
+  <p>เลเวลสูงสุด: <span id="finalLevel"></span></p>
   <button onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <script>
-let score = 0;
-let time = 10;
-let timer = null;
-let correctSide = "left";
+let score, combo, level, hearts;
+let time, timer;
+let correctSide;
 let paused = false;
 
-function showScreen(id) {
+function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
 function startGame() {
   score = 0;
-  time = 10;
-  document.getElementById("score").textContent = score;
-  document.getElementById("time").textContent = time;
-  showScreen("game");
+  combo = 0;
+  level = 1;
+  hearts = 3;
+  show('game');
+  updateUI();
   newQuestion();
-  startTimer();
+}
+
+function updateUI() {
+  scoreEl.textContent = score;
+  comboEl.textContent = combo;
+  levelEl.textContent = level;
+  heartsEl.textContent = "❤️".repeat(hearts);
 }
 
 function startTimer() {
   clearInterval(timer);
+  time = Math.max(3, 10 - level);
+  timeEl.textContent = time;
+
   timer = setInterval(() => {
     if (!paused) {
       time--;
-      document.getElementById("time").textContent = time;
-      if (time <= 0) endGame();
+      timeEl.textContent = time;
+      if (time <= 0) loseLife();
     }
   }, 1000);
 }
 
 function randomQuestion() {
-  const ops = ["+", "-", "×", "÷"];
-  const op = ops[Math.floor(Math.random() * ops.length)];
-  let a = Math.floor(Math.random() * 10) + 1;
-  let b = Math.floor(Math.random() * 10) + 1;
+  let max = 10 + level * 5;
+  let ops = ["+", "-"];
+  if (level >= 2) ops.push("×");
+  if (level >= 4) ops.push("÷");
+
+  let op = ops[Math.floor(Math.random() * ops.length)];
+  let a = Math.floor(Math.random() * max) + 1;
+  let b = Math.floor(Math.random() * max) + 1;
   let ans;
 
   if (op === "+") ans = a + b;
   if (op === "-") ans = a - b;
   if (op === "×") ans = a * b;
   if (op === "÷") {
-    ans = a;
-    b = 1 + Math.floor(Math.random() * 9);
+    ans = Math.floor(Math.random() * max) + 1;
+    b = Math.floor(Math.random() * max) + 1;
     a = ans * b;
   }
-
   return { text: `${a} ${op} ${b} = ?`, answer: ans };
 }
 
 function newQuestion() {
   const q = randomQuestion();
-  document.getElementById("question").textContent = q.text;
+  question.textContent = q.text;
 
-  const wrong = q.answer + (Math.floor(Math.random() * 5) + 1);
+  let wrong = q.answer + Math.floor(Math.random() * level + 1);
   if (Math.random() < 0.5) {
-    correctSide = "left";
+    correctSide = 'left';
     leftBtn.textContent = q.answer;
     rightBtn.textContent = wrong;
   } else {
-    correctSide = "right";
+    correctSide = 'right';
     leftBtn.textContent = wrong;
     rightBtn.textContent = q.answer;
   }
+  startTimer();
 }
 
 function choose(side) {
   if (paused) return;
-  if (side === correctSide) score++;
-  document.getElementById("score").textContent = score;
+
+  const btn = side === 'left' ? leftBtn : rightBtn;
+
+  if (side === correctSide) {
+    btn.classList.add('correct');
+    score += 10;
+    combo++;
+    if (combo % 5 === 0) level++;
+    setTimeout(() => btn.classList.remove('correct'), 300);
+  } else {
+    btn.classList.add('wrong');
+    setTimeout(() => btn.classList.remove('wrong'), 300);
+    loseLife();
+    return;
+  }
+
+  updateUI();
   newQuestion();
+}
+
+function loseLife() {
+  hearts--;
+  combo = 0;
+  updateUI();
+  if (hearts <= 0) endGame();
+  else newQuestion();
 }
 
 function pauseGame() {
   paused = true;
-  showScreen("pause");
+  show('pause');
 }
 
 function resumeGame() {
   paused = false;
-  showScreen("game");
+  show('game');
 }
 
 function endGame() {
   clearInterval(timer);
-  document.getElementById("finalScore").textContent = score;
-  showScreen("over");
+  finalScore.textContent = score;
+  finalLevel.textContent = level;
+  show('over');
 }
 
 function goMenu() {
   clearInterval(timer);
   paused = false;
-  showScreen("menu");
+  show('menu');
 }
+
+/* element refs */
+const timeEl = document.getElementById('time');
+const scoreEl = document.getElementById('score');
+const comboEl = document.getElementById('combo');
+const levelEl = document.getElementById('level');
+const heartsEl = document.getElementById('hearts');
+const question = document.getElementById('question');
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
 </script>
 
 </body>
