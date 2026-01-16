@@ -8,40 +8,78 @@
 <style>
 * { box-sizing: border-box; }
 
-:root {
-  --bg: #ffffff;
-  --text: #111827;
-}
-
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: #ffffff;
+  color: #111827;
   font-family: system-ui, sans-serif;
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: background 0.5s ease;
+  transition: background 0.3s ease;
+}
+
+/* shake + danger */
+body.shake {
+  animation: shake 0.35s;
+  background: #fee2e2;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
 }
 
 .screen {
   display: none;
   width: 100%;
   max-width: 420px;
-  text-align: center;
-  padding: 20px;
+  padding: 16px;
 }
 .active { display: block; }
 
-h1 { margin-bottom: 12px; }
-h2 { margin: 0; }
+.topbar {
+  position: relative;
+  height: 40px;
+  margin-bottom: 20px;
+}
+
+.left-info {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 14px;
+}
+
+.center-time {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.right-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
 
 button {
-  cursor: pointer;
   border: none;
-  border-radius: 14px;
-  font-size: 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.pause-btn {
+  padding: 6px 12px;
+  background: #e5e7eb;
 }
 
 .primary {
@@ -53,12 +91,13 @@ button {
 .question {
   font-size: 40px;
   margin: 30px 0;
+  text-align: center;
 }
 
 .buttons {
   display: flex;
-  gap: 24px;
   justify-content: center;
+  gap: 24px;
 }
 
 .choice {
@@ -75,67 +114,55 @@ button {
 .correct { background: #22c55e !important; }
 .wrong { background: #ef4444 !important; }
 
-.info {
-  margin-top: 16px;
-  font-size: 15px;
-  opacity: 0.85;
+.center {
+  text-align: center;
 }
 
-.pause-btn {
-  margin-top: 18px;
-  padding: 10px 18px;
-  background: #e5e7eb;
-}
-
-.countdown {
-  font-size: 96px;
-  font-weight: 700;
-}
-
-.gameover {
-  font-size: 64px;
+.big {
+  font-size: 72px;
   font-weight: 800;
-  margin-bottom: 10px;
 }
-
-.small { opacity: 0.7; font-size: 14px; }
 </style>
 </head>
 <body>
 
 <!-- MENU -->
-<div id="menu" class="screen active">
+<div id="menu" class="screen active center">
   <h1>Math Block Choice</h1>
-  <p class="small">High Score: <span id="highScore">0</span></p>
+  <p>High Score: <span id="highScore">0</span></p>
   <button class="primary" onclick="prepareGame()">เริ่มเกม</button>
 </div>
 
 <!-- COUNTDOWN -->
-<div id="countdown" class="screen">
-  <div class="countdown" id="countNum">3</div>
-  <p class="small">เตรียมพร้อม</p>
+<div id="countdown" class="screen center">
+  <div class="big" id="countNum">3</div>
+  <p>เตรียมพร้อม</p>
 </div>
 
 <!-- GAME -->
 <div id="game" class="screen">
-  <div class="question" id="question">1 + 1</div>
+  <div class="topbar">
+    <div class="left-info">
+      ❤️ <span id="hearts">3</span> | 🏆 <span id="score">0</span>
+    </div>
+    <div class="center-time">
+      ⏱ <span id="time">10</span>
+    </div>
+    <div class="right-btn">
+      <button class="pause-btn" onclick="pauseGame()">หยุด</button>
+    </div>
+  </div>
+
+  <div class="question" id="question"></div>
 
   <div class="buttons">
-    <button id="leftBtn" class="choice left" onclick="choose('left')">0</button>
-    <button id="rightBtn" class="choice right" onclick="choose('right')">0</button>
+    <button id="leftBtn" class="choice left" onclick="choose('left')"></button>
+    <button id="rightBtn" class="choice right" onclick="choose('right')"></button>
   </div>
-
-  <div class="info">
-    ❤️ <span id="hearts">3</span> |
-    ⏱ <span id="time">10</span>s |
-    Score: <span id="score">0</span>
-  </div>
-
-  <button class="pause-btn" onclick="pauseGame()">หยุดเกม</button>
 </div>
 
 <!-- PAUSE -->
-<div id="pause" class="screen">
+<div id="pause" class="screen center">
   <h2>หยุดเกม</h2>
   <button class="primary" onclick="resumeGame()">เล่นต่อ</button>
   <br><br>
@@ -143,186 +170,147 @@ button {
 </div>
 
 <!-- GAME OVER -->
-<div id="over" class="screen">
-  <div class="gameover">GAME OVER</div>
+<div id="over" class="screen center">
+  <div class="big">GAME OVER</div>
   <p>คะแนน: <span id="finalScore"></span></p>
   <p>High Score: <span id="finalHigh"></span></p>
   <button class="primary" onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <script>
-/* ===== STATE ===== */
 let score, hearts, time, timer;
-let correctSide;
-let paused = false;
-let streak = 0;
-let colorMode = false;
+let correctSide, paused=false, streak=0;
 
-const colors = [
-  "#fef3c7","#dbeafe","#dcfce7","#fae8ff","#ffe4e6",
-  "#ecfeff","#f0fdf4","#fff7ed"
-];
-
+const colors = ["#fef3c7","#dbeafe","#dcfce7","#fae8ff","#ffe4e6"];
 const $ = id => document.getElementById(id);
 
-/* ===== SCREEN ===== */
-function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $(id).classList.add('active');
 }
 
-/* ===== MENU / COUNTDOWN ===== */
-function prepareGame() {
+/* countdown */
+function prepareGame(){
   show('countdown');
-  let n = 3;
-  countNum.textContent = n;
-  const cd = setInterval(() => {
+  let n=3;
+  countNum.textContent=n;
+  const cd=setInterval(()=>{
     n--;
-    if (n === 0) {
-      clearInterval(cd);
-      startGame();
-    } else {
-      countNum.textContent = n;
-    }
-  }, 1000);
+    if(n===0){ clearInterval(cd); startGame(); }
+    else countNum.textContent=n;
+  },1000);
 }
 
-function startGame() {
-  score = 0;
-  hearts = 3;
-  streak = 0;
-  colorMode = false;
-  document.body.style.background = "#ffffff";
-  paused = false;
+function startGame(){
+  score=0; hearts=3; streak=0;
+  paused=false;
+  document.body.style.background="#ffffff";
   updateUI();
   show('game');
   newQuestion();
 }
 
-/* ===== GAME ===== */
-function updateUI() {
-  score.textContent = score;
-  heartsEl.textContent = hearts;
+function updateUI(){
+  $('score').textContent=score;
+  $('hearts').textContent=hearts;
 }
 
-function startTimer() {
+/* timer */
+function startTimer(){
   clearInterval(timer);
-  time = 10;
-  timeEl.textContent = time;
-
-  timer = setInterval(() => {
-    if (!paused) {
+  time=10;
+  $('time').textContent=time;
+  timer=setInterval(()=>{
+    if(!paused){
       time--;
-      timeEl.textContent = time;
-      if (time <= 0) loseLife();
+      $('time').textContent=time;
+      if(time<=0) danger();
     }
-  }, 1000);
+  },1000);
 }
 
-function newQuestion() {
-  if (colorMode) {
-    document.body.style.background =
-      colors[Math.floor(Math.random() * colors.length)];
-  }
-
-  const a = Math.floor(Math.random() * 9) + 1;
-  const b = Math.floor(Math.random() * 9) + 1;
-  const answer = a * b;
-
-  question.textContent = `${a} × ${b}`;
-
-  const wrong = answer + Math.floor(Math.random() * 5) + 1;
-
-  if (Math.random() < 0.5) {
-    correctSide = 'left';
-    leftBtn.textContent = answer;
-    rightBtn.textContent = wrong;
-  } else {
-    correctSide = 'right';
-    leftBtn.textContent = wrong;
-    rightBtn.textContent = answer;
-  }
-
-  startTimer();
-}
-
-function choose(side) {
-  if (paused) return;
-  const btn = side === 'left' ? leftBtn : rightBtn;
-
-  if (side === correctSide) {
-    btn.classList.add('correct');
-    score++;
-    streak++;
-
-    if (streak >= 5) colorMode = true;
-
-    setTimeout(() => btn.classList.remove('correct'), 200);
-    newQuestion();
-  } else {
-    btn.classList.add('wrong');
-    setTimeout(() => btn.classList.remove('wrong'), 200);
-    loseLife();
-  }
-  updateUI();
-}
-
-function loseLife() {
+function danger(){
+  clearInterval(timer);
+  screenShake();
   hearts--;
-  streak = 0;
-  colorMode = false;
-  document.body.style.background = "#ffffff";
-
-  if (hearts <= 0) endGame();
+  streak=0;
+  document.body.style.background="#ffffff";
+  if(hearts<=0) endGame();
   else newQuestion();
 }
 
-/* ===== PAUSE ===== */
-function pauseGame() {
-  paused = true;
-  show('pause');
-}
-function resumeGame() {
-  paused = false;
-  show('game');
+function screenShake(){
+  document.body.classList.add('shake');
+  setTimeout(()=>document.body.classList.remove('shake'),350);
 }
 
-/* ===== GAME OVER / SCORE ===== */
-function endGame() {
-  clearInterval(timer);
-  finalScore.textContent = score;
-
-  let hs = localStorage.getItem("mathHigh") || 0;
-  if (score > hs) {
-    hs = score;
-    localStorage.setItem("mathHigh", hs);
+function newQuestion(){
+  if(streak>=5){
+    document.body.style.background=colors[Math.floor(Math.random()*colors.length)];
   }
-  finalHigh.textContent = hs;
+
+  const a=Math.floor(Math.random()*9)+1;
+  const b=Math.floor(Math.random()*9)+1;
+  const ans=a*b;
+  $('question').textContent=`${a} × ${b}`;
+  const wrong=ans+Math.floor(Math.random()*5)+1;
+
+  if(Math.random()<0.5){
+    correctSide='left';
+    leftBtn.textContent=ans;
+    rightBtn.textContent=wrong;
+  }else{
+    correctSide='right';
+    leftBtn.textContent=wrong;
+    rightBtn.textContent=ans;
+  }
+  startTimer();
+}
+
+function choose(side){
+  if(paused) return;
+  const btn=side==='left'?leftBtn:rightBtn;
+
+  if(side===correctSide){
+    btn.classList.add('correct');
+    score++; streak++;
+    setTimeout(()=>btn.classList.remove('correct'),200);
+    updateUI();
+    newQuestion();
+  }else{
+    btn.classList.add('wrong');
+    setTimeout(()=>btn.classList.remove('wrong'),200);
+    screenShake();
+    hearts--; streak=0;
+    document.body.style.background="#ffffff";
+    updateUI();
+    if(hearts<=0) endGame();
+    else newQuestion();
+  }
+}
+
+/* pause */
+function pauseGame(){ paused=true; show('pause'); }
+function resumeGame(){ paused=false; show('game'); }
+
+/* game over */
+function endGame(){
+  clearInterval(timer);
+  $('finalScore').textContent=score;
+  let hs=localStorage.getItem("mathHigh")||0;
+  if(score>hs){ hs=score; localStorage.setItem("mathHigh",hs); }
+  $('finalHigh').textContent=hs;
   show('over');
 }
 
-function goMenu() {
+function goMenu(){
   clearInterval(timer);
-  paused = false;
-  highScore.textContent = localStorage.getItem("mathHigh") || 0;
+  paused=false;
+  $('highScore').textContent=localStorage.getItem("mathHigh")||0;
   show('menu');
 }
 
-/* ===== REFS ===== */
-const timeEl = $("time");
-const heartsEl = $("hearts");
-const question = $("question");
-const leftBtn = $("leftBtn");
-const rightBtn = $("rightBtn");
-const countNum = $("countNum");
-
-const scoreEl = $("score");
-Object.defineProperty(window, 'score', {
-  get: () => scoreEl,
-  set: v => scoreEl.textContent = v
-});
-
-highScore.textContent = localStorage.getItem("mathHigh") || 0;
+$('highScore').textContent=localStorage.getItem("mathHigh")||0;
 </script>
 
 </body>
