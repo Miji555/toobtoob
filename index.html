@@ -6,312 +6,248 @@
 <title>Math Block Choice</title>
 
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: #ffffff;
-  color: #111827;
-  font-family: system-ui, sans-serif;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background 0.3s ease;
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:system-ui,sans-serif;
+  background:#f9fafb;
+  height:100vh;
+  overflow:hidden;
+  transition:background .3s;
+}
+body.danger{
+  background:#fee2e2;
+  animation:shake .35s;
+}
+@keyframes shake{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  50%{transform:translateX(6px)}
+  75%{transform:translateX(-6px)}
+  100%{transform:translateX(0)}
 }
 
-/* shake + danger */
-body.shake {
-  animation: shake 0.35s;
-  background: #fee2e2;
+.screen{display:none;height:100vh}
+.active{display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+/* HUD */
+.hud{
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  padding:10px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  z-index:10;
+  background:#ffffffcc;
+  backdrop-filter:blur(6px);
+}
+.hud-left{font-size:14px}
+.hud-center{font-size:18px;font-weight:700}
+.hud-right button{
+  border:none;
+  background:#e5e7eb;
+  padding:6px 12px;
+  border-radius:10px;
 }
 
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  50% { transform: translateX(6px); }
-  75% { transform: translateX(-6px); }
-  100% { transform: translateX(0); }
+/* Game */
+.game{
+  padding-top:70px;
+  width:100%;
+  max-width:420px;
+  text-align:center;
 }
-
-.screen {
-  display: none;
-  width: 100%;
-  max-width: 420px;
-  padding: 16px;
+.question{
+  font-size:40px;
+  margin:30px 0;
 }
-.active { display: block; }
-
-.topbar {
-  position: relative;
-  height: 40px;
-  margin-bottom: 20px;
+.choices{
+  display:flex;
+  gap:20px;
+  justify-content:center;
 }
-
-.left-info {
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 14px;
+.choice{
+  width:140px;
+  height:80px;
+  font-size:28px;
+  color:white;
+  border:none;
+  border-radius:16px;
+  transition:transform .15s;
 }
+.choice:active{transform:scale(.9)}
+.left{background:#f59e0b}
+.right{background:#2dd4bf}
+.correct{background:#22c55e!important}
+.wrong{background:#ef4444!important}
 
-.center-time {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 0;
-  font-size: 18px;
-  font-weight: 600;
+/* Menu / Pause / Over */
+button.primary{
+  background:#2563eb;
+  color:white;
+  border:none;
+  padding:14px 28px;
+  border-radius:14px;
+  font-size:18px;
 }
-
-.right-btn {
-  position: absolute;
-  right: 0;
-  top: 0;
-}
-
-button {
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.pause-btn {
-  padding: 6px 12px;
-  background: #e5e7eb;
-}
-
-.primary {
-  padding: 14px 24px;
-  background: #2563eb;
-  color: white;
-}
-
-.question {
-  font-size: 40px;
-  margin: 30px 0;
-  text-align: center;
-}
-
-.buttons {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-}
-
-.choice {
-  width: 130px;
-  height: 80px;
-  font-size: 28px;
-  border-radius: 14px;
-  color: white;
-}
-
-.left { background: #f59e0b; }
-.right { background: #2dd4bf; }
-
-.correct { background: #22c55e !important; }
-.wrong { background: #ef4444 !important; }
-
-.center {
-  text-align: center;
-}
-
-.big {
-  font-size: 72px;
-  font-weight: 800;
-}
+.big{font-size:64px;font-weight:800}
 </style>
 </head>
+
 <body>
 
 <!-- MENU -->
-<div id="menu" class="screen active center">
+<div id="menu" class="screen active">
   <h1>Math Block Choice</h1>
-  <p>High Score: <span id="highScore">0</span></p>
-  <button class="primary" onclick="prepareGame()">เริ่มเกม</button>
-</div>
-
-<!-- COUNTDOWN -->
-<div id="countdown" class="screen center">
-  <div class="big" id="countNum">3</div>
-  <p>เตรียมพร้อม</p>
+  <p>High Score: <span id="high">0</span></p>
+  <br>
+  <button class="primary" onclick="startGame()">เริ่มเกม</button>
 </div>
 
 <!-- GAME -->
 <div id="game" class="screen">
-  <div class="topbar">
-    <div class="left-info">
-      ❤️ <span id="hearts">3</span> | 🏆 <span id="score">0</span>
+  <div class="hud">
+    <div class="hud-left">
+      ❤️ <span id="heart">3</span> |
+      🏆 <span id="score">0</span>
     </div>
-    <div class="center-time">
-      ⏱ <span id="time">10</span>
-    </div>
-    <div class="right-btn">
-      <button class="pause-btn" onclick="pauseGame()">หยุด</button>
+    <div class="hud-center">⏱ <span id="time">10</span></div>
+    <div class="hud-right">
+      <button onclick="pauseGame()">หยุด</button>
     </div>
   </div>
 
-  <div class="question" id="question"></div>
-
-  <div class="buttons">
-    <button id="leftBtn" class="choice left" onclick="choose('left')"></button>
-    <button id="rightBtn" class="choice right" onclick="choose('right')"></button>
+  <div class="game">
+    <div class="question" id="question"></div>
+    <div class="choices">
+      <button id="a" class="choice left" onclick="choose(0)"></button>
+      <button id="b" class="choice right" onclick="choose(1)"></button>
+    </div>
   </div>
 </div>
 
 <!-- PAUSE -->
-<div id="pause" class="screen center">
+<div id="pause" class="screen">
   <h2>หยุดเกม</h2>
+  <br>
   <button class="primary" onclick="resumeGame()">เล่นต่อ</button>
-  <br><br>
-  <button class="pause-btn" onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <!-- GAME OVER -->
-<div id="over" class="screen center">
+<div id="over" class="screen">
   <div class="big">GAME OVER</div>
-  <p>คะแนน: <span id="finalScore"></span></p>
-  <p>High Score: <span id="finalHigh"></span></p>
-  <button class="primary" onclick="goMenu()">กลับเมนู</button>
+  <p>คะแนน: <span id="final"></span></p>
+  <button class="primary" onclick="backMenu()">กลับเมนู</button>
 </div>
 
 <script>
-let score, hearts, time, timer;
-let correctSide, paused=false, streak=0;
+let score,heart,time,timer,paused=false;
+let correctIndex;
+const ops=["+","-","×","÷"];
 
-const colors = ["#fef3c7","#dbeafe","#dcfce7","#fae8ff","#ffe4e6"];
-const $ = id => document.getElementById(id);
+const soundCorrect=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3");
+const soundWrong=new Audio("https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3");
 
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  $(id).classList.add('active');
-}
-
-/* countdown */
-function prepareGame(){
-  show('countdown');
-  let n=3;
-  countNum.textContent=n;
-  const cd=setInterval(()=>{
-    n--;
-    if(n===0){ clearInterval(cd); startGame(); }
-    else countNum.textContent=n;
-  },1000);
+  document.getElementById(id).classList.add('active');
 }
 
 function startGame(){
-  score=0; hearts=3; streak=0;
-  paused=false;
-  document.body.style.background="#ffffff";
+  score=0;heart=3;
+  show("game");
   updateUI();
-  show('game');
-  newQuestion();
+  nextQuestion();
 }
 
-function updateUI(){
-  $('score').textContent=score;
-  $('hearts').textContent=hearts;
+function difficulty(){
+  if(score<5) return 1;
+  if(score<15) return 2;
+  return 3;
 }
 
-/* timer */
-function startTimer(){
+function nextQuestion(){
   clearInterval(timer);
   time=10;
-  $('time').textContent=time;
+  document.getElementById("time").textContent=time;
+
+  const lvl=difficulty();
+  const op=ops[Math.floor(Math.random()*(lvl+1))];
+  let a=Math.floor(Math.random()*9*lvl)+1;
+  let b=Math.floor(Math.random()*9*lvl)+1;
+  let ans;
+
+  if(op==="÷"){ ans=a; a=a*b; }
+  else if(op==="+") ans=a+b;
+  else if(op==="-") ans=a-b;
+  else ans=a*b;
+
+  document.getElementById("question").textContent=`${a} ${op} ${b}`;
+  const wrong=ans+Math.floor(Math.random()*5)+1;
+  correctIndex=Math.random()<0.5?0:1;
+  document.getElementById("a").textContent=correctIndex===0?ans:wrong;
+  document.getElementById("b").textContent=correctIndex===1?ans:wrong;
+
   timer=setInterval(()=>{
     if(!paused){
       time--;
-      $('time').textContent=time;
-      if(time<=0) danger();
+      document.getElementById("time").textContent=time;
+      if(time<=0) fail();
     }
   },1000);
 }
 
-function danger(){
-  clearInterval(timer);
-  screenShake();
-  hearts--;
-  streak=0;
-  document.body.style.background="#ffffff";
-  if(hearts<=0) endGame();
-  else newQuestion();
-}
-
-function screenShake(){
-  document.body.classList.add('shake');
-  setTimeout(()=>document.body.classList.remove('shake'),350);
-}
-
-function newQuestion(){
-  if(streak>=5){
-    document.body.style.background=colors[Math.floor(Math.random()*colors.length)];
-  }
-
-  const a=Math.floor(Math.random()*9)+1;
-  const b=Math.floor(Math.random()*9)+1;
-  const ans=a*b;
-  $('question').textContent=`${a} × ${b}`;
-  const wrong=ans+Math.floor(Math.random()*5)+1;
-
-  if(Math.random()<0.5){
-    correctSide='left';
-    leftBtn.textContent=ans;
-    rightBtn.textContent=wrong;
-  }else{
-    correctSide='right';
-    leftBtn.textContent=wrong;
-    rightBtn.textContent=ans;
-  }
-  startTimer();
-}
-
-function choose(side){
+function choose(i){
   if(paused) return;
-  const btn=side==='left'?leftBtn:rightBtn;
-
-  if(side===correctSide){
-    btn.classList.add('correct');
-    score++; streak++;
-    setTimeout(()=>btn.classList.remove('correct'),200);
+  const btn=i===0?document.getElementById("a"):document.getElementById("b");
+  if(i===correctIndex){
+    soundCorrect.play();
+    btn.classList.add("correct");
+    score++;
+    setTimeout(()=>btn.classList.remove("correct"),200);
     updateUI();
-    newQuestion();
-  }else{
-    btn.classList.add('wrong');
-    setTimeout(()=>btn.classList.remove('wrong'),200);
-    screenShake();
-    hearts--; streak=0;
-    document.body.style.background="#ffffff";
-    updateUI();
-    if(hearts<=0) endGame();
-    else newQuestion();
-  }
+    nextQuestion();
+  }else fail();
 }
 
-/* pause */
-function pauseGame(){ paused=true; show('pause'); }
-function resumeGame(){ paused=false; show('game'); }
+function fail(){
+  clearInterval(timer);
+  soundWrong.play();
+  navigator.vibrate?.(200);
+  document.body.classList.add("danger");
+  setTimeout(()=>document.body.classList.remove("danger"),400);
+  heart--;
+  updateUI();
+  if(heart<=0) endGame();
+  else nextQuestion();
+}
 
-/* game over */
+function updateUI(){
+  heartEl.textContent=heart;
+  scoreEl.textContent=score;
+}
+
+function pauseGame(){ paused=true; show("pause"); }
+function resumeGame(){ paused=false; show("game"); }
+
 function endGame(){
-  clearInterval(timer);
-  $('finalScore').textContent=score;
-  let hs=localStorage.getItem("mathHigh")||0;
-  if(score>hs){ hs=score; localStorage.setItem("mathHigh",hs); }
-  $('finalHigh').textContent=hs;
-  show('over');
+  show("over");
+  final.textContent=score;
+  let h=localStorage.getItem("high")||0;
+  if(score>h) localStorage.setItem("high",score);
 }
 
-function goMenu(){
-  clearInterval(timer);
-  paused=false;
-  $('highScore').textContent=localStorage.getItem("mathHigh")||0;
-  show('menu');
+function backMenu(){
+  high.textContent=localStorage.getItem("high")||0;
+  show("menu");
 }
 
-$('highScore').textContent=localStorage.getItem("mathHigh")||0;
+const heartEl=document.getElementById("heart");
+const scoreEl=document.getElementById("score");
+const final=document.getElementById("final");
+const high=document.getElementById("high");
+high.textContent=localStorage.getItem("high")||0;
 </script>
-
 </body>
 </html>
