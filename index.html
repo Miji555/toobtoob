@@ -7,15 +7,22 @@
 
 <style>
 * { box-sizing: border-box; }
+
+:root {
+  --bg: #ffffff;
+  --text: #111827;
+}
+
 body {
   margin: 0;
-  background: #0b0b0b;
-  color: white;
+  background: var(--bg);
+  color: var(--text);
   font-family: system-ui, sans-serif;
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background 0.5s ease;
 }
 
 .screen {
@@ -23,14 +30,29 @@ body {
   width: 100%;
   max-width: 420px;
   text-align: center;
+  padding: 20px;
 }
 .active { display: block; }
 
-h1 { margin-bottom: 20px; }
+h1 { margin-bottom: 12px; }
+h2 { margin: 0; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+}
+
+.primary {
+  padding: 14px 24px;
+  background: #2563eb;
+  color: white;
+}
 
 .question {
-  font-size: 36px;
-  margin-bottom: 30px;
+  font-size: 40px;
+  margin: 30px 0;
 }
 
 .buttons {
@@ -40,12 +62,11 @@ h1 { margin-bottom: 20px; }
 }
 
 .choice {
-  width: 120px;
+  width: 130px;
   height: 80px;
   font-size: 28px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
+  border-radius: 14px;
+  color: white;
 }
 
 .left { background: #f59e0b; }
@@ -55,20 +76,29 @@ h1 { margin-bottom: 20px; }
 .wrong { background: #ef4444 !important; }
 
 .info {
-  margin-top: 20px;
-  font-size: 16px;
-  opacity: 0.8;
+  margin-top: 16px;
+  font-size: 15px;
+  opacity: 0.85;
 }
 
 .pause-btn {
-  margin-top: 20px;
-  background: #444;
-  color: white;
-  border-radius: 10px;
-  padding: 10px 20px;
-  border: none;
-  cursor: pointer;
+  margin-top: 18px;
+  padding: 10px 18px;
+  background: #e5e7eb;
 }
+
+.countdown {
+  font-size: 96px;
+  font-weight: 700;
+}
+
+.gameover {
+  font-size: 64px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.small { opacity: 0.7; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -76,7 +106,14 @@ h1 { margin-bottom: 20px; }
 <!-- MENU -->
 <div id="menu" class="screen active">
   <h1>Math Block Choice</h1>
-  <button class="pause-btn" onclick="startGame()">เริ่มเกม</button>
+  <p class="small">High Score: <span id="highScore">0</span></p>
+  <button class="primary" onclick="prepareGame()">เริ่มเกม</button>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdown" class="screen">
+  <div class="countdown" id="countNum">3</div>
+  <p class="small">เตรียมพร้อม</p>
 </div>
 
 <!-- GAME -->
@@ -99,64 +136,100 @@ h1 { margin-bottom: 20px; }
 
 <!-- PAUSE -->
 <div id="pause" class="screen">
-  <h1>หยุดเกม</h1>
-  <button class="pause-btn" onclick="resumeGame()">▶ เล่นต่อ</button>
-  <button class="pause-btn" onclick="goMenu()">⏹ กลับเมนู</button>
+  <h2>หยุดเกม</h2>
+  <button class="primary" onclick="resumeGame()">เล่นต่อ</button>
+  <br><br>
+  <button class="pause-btn" onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <!-- GAME OVER -->
 <div id="over" class="screen">
-  <h1>เกมจบ</h1>
+  <div class="gameover">GAME OVER</div>
   <p>คะแนน: <span id="finalScore"></span></p>
-  <button class="pause-btn" onclick="goMenu()">กลับเมนู</button>
+  <p>High Score: <span id="finalHigh"></span></p>
+  <button class="primary" onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <script>
+/* ===== STATE ===== */
 let score, hearts, time, timer;
 let correctSide;
 let paused = false;
+let streak = 0;
+let colorMode = false;
+
+const colors = [
+  "#fef3c7","#dbeafe","#dcfce7","#fae8ff","#ffe4e6",
+  "#ecfeff","#f0fdf4","#fff7ed"
+];
 
 const $ = id => document.getElementById(id);
 
+/* ===== SCREEN ===== */
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
 }
 
+/* ===== MENU / COUNTDOWN ===== */
+function prepareGame() {
+  show('countdown');
+  let n = 3;
+  countNum.textContent = n;
+  const cd = setInterval(() => {
+    n--;
+    if (n === 0) {
+      clearInterval(cd);
+      startGame();
+    } else {
+      countNum.textContent = n;
+    }
+  }, 1000);
+}
+
 function startGame() {
   score = 0;
   hearts = 3;
+  streak = 0;
+  colorMode = false;
+  document.body.style.background = "#ffffff";
   paused = false;
   updateUI();
   show('game');
   newQuestion();
 }
 
+/* ===== GAME ===== */
 function updateUI() {
-  $('score').textContent = score;
-  $('hearts').textContent = hearts;
+  score.textContent = score;
+  heartsEl.textContent = hearts;
 }
 
 function startTimer() {
   clearInterval(timer);
   time = 10;
-  $('time').textContent = time;
+  timeEl.textContent = time;
 
   timer = setInterval(() => {
     if (!paused) {
       time--;
-      $('time').textContent = time;
+      timeEl.textContent = time;
       if (time <= 0) loseLife();
     }
   }, 1000);
 }
 
 function newQuestion() {
+  if (colorMode) {
+    document.body.style.background =
+      colors[Math.floor(Math.random() * colors.length)];
+  }
+
   const a = Math.floor(Math.random() * 9) + 1;
   const b = Math.floor(Math.random() * 9) + 1;
   const answer = a * b;
 
-  $('question').textContent = `${a} × ${b}`;
+  question.textContent = `${a} × ${b}`;
 
   const wrong = answer + Math.floor(Math.random() * 5) + 1;
 
@@ -175,12 +248,15 @@ function newQuestion() {
 
 function choose(side) {
   if (paused) return;
-
   const btn = side === 'left' ? leftBtn : rightBtn;
 
   if (side === correctSide) {
     btn.classList.add('correct');
     score++;
+    streak++;
+
+    if (streak >= 5) colorMode = true;
+
     setTimeout(() => btn.classList.remove('correct'), 200);
     newQuestion();
   } else {
@@ -193,31 +269,60 @@ function choose(side) {
 
 function loseLife() {
   hearts--;
+  streak = 0;
+  colorMode = false;
+  document.body.style.background = "#ffffff";
+
   if (hearts <= 0) endGame();
   else newQuestion();
 }
 
+/* ===== PAUSE ===== */
 function pauseGame() {
   paused = true;
   show('pause');
 }
-
 function resumeGame() {
   paused = false;
   show('game');
 }
 
+/* ===== GAME OVER / SCORE ===== */
 function endGame() {
   clearInterval(timer);
-  $('finalScore').textContent = score;
+  finalScore.textContent = score;
+
+  let hs = localStorage.getItem("mathHigh") || 0;
+  if (score > hs) {
+    hs = score;
+    localStorage.setItem("mathHigh", hs);
+  }
+  finalHigh.textContent = hs;
   show('over');
 }
 
 function goMenu() {
   clearInterval(timer);
   paused = false;
+  highScore.textContent = localStorage.getItem("mathHigh") || 0;
   show('menu');
 }
+
+/* ===== REFS ===== */
+const timeEl = $("time");
+const heartsEl = $("hearts");
+const question = $("question");
+const leftBtn = $("leftBtn");
+const rightBtn = $("rightBtn");
+const countNum = $("countNum");
+
+const scoreEl = $("score");
+Object.defineProperty(window, 'score', {
+  get: () => scoreEl,
+  set: v => scoreEl.textContent = v
+});
+
+highScore.textContent = localStorage.getItem("mathHigh") || 0;
 </script>
 
 </body>
