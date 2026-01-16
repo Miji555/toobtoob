@@ -14,19 +14,13 @@ body{
   overflow:hidden;
   transition:background .3s;
 }
-body.danger{
-  background:#fee2e2;
-  animation:shake .35s;
-}
-@keyframes shake{
-  0%{transform:translateX(0)}
-  25%{transform:translateX(-6px)}
-  50%{transform:translateX(6px)}
-  75%{transform:translateX(-6px)}
-  100%{transform:translateX(0)}
-}
 
-.screen{display:none;height:100vh}
+/* ---------- COMMON ---------- */
+.screen{
+  display:none;
+  height:100vh;
+  width:100%;
+}
 .active{
   display:flex;
   flex-direction:column;
@@ -34,7 +28,75 @@ body.danger{
   justify-content:center;
 }
 
-/* HUD */
+button{
+  border:none;
+  cursor:pointer;
+}
+button.primary{
+  background:#2563eb;
+  color:white;
+  font-size:20px;
+  padding:16px 44px;
+  border-radius:20px;
+}
+.big{font-size:64px;font-weight:800}
+
+/* ---------- MENU DESIGN ---------- */
+.menu-screen{
+  position:relative;
+  background:#ffffff;
+  overflow:hidden;
+}
+
+/* math symbols background */
+.math-bg{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+.math-bg span{
+  position:absolute;
+  font-size:90px;
+  font-weight:900;
+  color:#e5e7eb;
+  opacity:0.9;
+  animation:float 6s ease-in-out infinite;
+}
+
+.math-bg span:nth-child(1){top:8%;left:12%}
+.math-bg span:nth-child(2){top:22%;right:10%}
+.math-bg span:nth-child(3){bottom:25%;left:8%}
+.math-bg span:nth-child(4){bottom:18%;right:16%}
+.math-bg span:nth-child(5){top:55%;left:45%}
+.math-bg span:nth-child(6){top:70%;right:35%}
+
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-14px)}
+}
+
+/* menu content */
+.menu-content{
+  position:relative;
+  z-index:2;
+  text-align:center;
+  padding:20px;
+}
+
+.logo{
+  font-size:56px;
+  font-weight:900;
+  line-height:1.1;
+  margin-bottom:14px;
+}
+
+.subtitle{
+  color:#6b7280;
+  margin-bottom:36px;
+}
+
+/* ---------- HUD ---------- */
 .hud{
   position:fixed;
   top:0;left:0;
@@ -50,13 +112,12 @@ body.danger{
 .hud-left{font-size:14px}
 .hud-center{font-size:18px;font-weight:700}
 .hud-right button{
-  border:none;
   background:#e5e7eb;
   padding:6px 12px;
   border-radius:10px;
 }
 
-/* Game */
+/* ---------- GAME ---------- */
 .game{
   padding-top:70px;
   width:100%;
@@ -77,40 +138,36 @@ body.danger{
   height:80px;
   font-size:28px;
   color:white;
-  border:none;
   border-radius:16px;
   transition:transform .15s;
 }
 .choice:active{transform:scale(.9)}
 .left{background:#f59e0b}
 .right{background:#2dd4bf}
-.correct{background:#22c55e!important}
-.wrong{background:#ef4444!important}
-
-/* Common */
-button.primary{
-  background:#2563eb;
-  color:white;
-  border:none;
-  padding:14px 28px;
-  border-radius:14px;
-  font-size:18px;
-}
-.big{font-size:64px;font-weight:800}
 </style>
 </head>
 
 <body>
 
-<!-- MENU -->
-<div id="menu" class="screen active">
-  <h1>Math Block Choice</h1>
-  <p>High Score: <span id="high">0</span></p>
-  <br>
-  <button class="primary" onclick="startGame()">เริ่มเกม</button>
+<!-- ===== MENU ===== -->
+<div id="menu" class="screen active menu-screen">
+  <div class="math-bg">
+    <span>＋</span>
+    <span>−</span>
+    <span>×</span>
+    <span>÷</span>
+    <span>＋</span>
+    <span>×</span>
+  </div>
+
+  <div class="menu-content">
+    <h1 class="logo">Math<br>Block<br>Choice</h1>
+    <p class="subtitle">คิดเร็ว • เลือกไว • ฝึกสมอง</p>
+    <button class="primary" onclick="startGame()">เริ่มเกม</button>
+  </div>
 </div>
 
-<!-- COUNTDOWN -->
+<!-- ===== COUNTDOWN ===== -->
 <div id="countdown" class="screen">
   <div class="big" id="countNum">3</div>
   <p>เตรียมพร้อม</p>
@@ -118,7 +175,7 @@ button.primary{
   <button class="primary" onclick="skipCountdown()">ข้าม</button>
 </div>
 
-<!-- GAME -->
+<!-- ===== GAME ===== -->
 <div id="game" class="screen">
   <div class="hud">
     <div class="hud-left">
@@ -142,7 +199,7 @@ button.primary{
   </div>
 </div>
 
-<!-- PAUSE -->
+<!-- ===== PAUSE ===== -->
 <div id="pause" class="screen">
   <h2>หยุดเกม</h2>
   <br>
@@ -151,7 +208,7 @@ button.primary{
   <button onclick="backMenu()">กลับหน้าแรก</button>
 </div>
 
-<!-- GAME OVER -->
+<!-- ===== GAME OVER ===== -->
 <div id="over" class="screen">
   <div class="big">GAME OVER</div>
   <p>คะแนน: <span id="final"></span></p>
@@ -162,8 +219,6 @@ button.primary{
 <script>
 let score=0, heart=3, time=10;
 let timer=null, paused=false, correctIndex=0, countdownTimer=null;
-
-const ops=["+","-","×","÷"];
 
 const $ = id => document.getElementById(id);
 
@@ -196,45 +251,26 @@ function startCountdown(){
     }
   },1000);
 }
-
 function skipCountdown(){
   clearInterval(countdownTimer);
   beginGame();
 }
-
 function beginGame(){
   show("game");
   nextQuestion();
 }
 
-/* DIFFICULTY */
-function difficulty(){
-  if(score<5) return 1;
-  if(score<15) return 2;
-  return 3;
-}
-
-/* QUESTION */
+/* GAME LOGIC (คูณอย่างเดียว) */
 function nextQuestion(){
   clearInterval(timer);
   time=10;
   $("time").textContent=time;
 
-  const lvl=difficulty();
-  const op=ops[Math.floor(Math.random()*(lvl+1))];
+  const a=Math.floor(Math.random()*9)+1;
+  const b=Math.floor(Math.random()*9)+1;
+  const ans=a*b;
 
-  let a=Math.floor(Math.random()*9*lvl)+1;
-  let b=Math.floor(Math.random()*9*lvl)+1;
-  let ans=0;
-
-  if(op==="÷"){
-    ans=a;
-    a=a*b;
-  }else if(op==="+") ans=a+b;
-  else if(op==="-") ans=a-b;
-  else ans=a*b;
-
-  $("question").textContent=`${a} ${op} ${b}`;
+  $("question").textContent=`${a} × ${b}`;
 
   const wrong=ans+Math.floor(Math.random()*5)+1;
   correctIndex=Math.random()<0.5?0:1;
@@ -250,7 +286,6 @@ function nextQuestion(){
   },1000);
 }
 
-/* ANSWER */
 function choose(i){
   if(paused) return;
   if(i===correctIndex){
@@ -262,11 +297,8 @@ function choose(i){
   }
 }
 
-/* FAIL */
 function fail(){
   clearInterval(timer);
-  document.body.classList.add("danger");
-  setTimeout(()=>document.body.classList.remove("danger"),400);
   heart--;
   updateUI();
   if(heart<=0) endGame();
@@ -285,7 +317,6 @@ function pauseGame(){
   clearInterval(timer);
   show("pause");
 }
-
 function resumeGame(){
   paused=false;
   show("game");
@@ -296,19 +327,13 @@ function resumeGame(){
 function endGame(){
   clearInterval(timer);
   $("final").textContent=score;
-  let h=localStorage.getItem("high")||0;
-  if(score>h) localStorage.setItem("high",score);
   show("over");
 }
-
 function backMenu(){
   clearInterval(timer);
   paused=false;
-  $("high").textContent=localStorage.getItem("high")||0;
   show("menu");
 }
-
-$("high").textContent=localStorage.getItem("high")||0;
 </script>
 </body>
 </html>
