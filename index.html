@@ -2,21 +2,23 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>Math Block Choice</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Tree Chop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<div id="hud">
+  <div id="energy"><div id="energy-bar"></div></div>
+</div>
+
 <div id="game">
-  <div id="question">?</div>
+  <div id="tree"></div>
 
-  <div id="blocks">
-    <div class="block left" onclick="choose('left')"></div>
-    <div class="block right" onclick="choose('right')"></div>
-  </div>
+  <div id="block left"></div>
+  <div id="block right"></div>
 
-  <div id="score">Score: 0</div>
+  <div id="player"></div>
 </div>
 
 <script src="game.js"></script>
