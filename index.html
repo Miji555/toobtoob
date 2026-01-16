@@ -1,26 +1,205 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>Math Tree Chop</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Math Choice Game</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+  }
+
+  .screen {
+    display: none;
+    padding: 40px;
+  }
+  .active {
+    display: block;
+  }
+
+  button {
+    padding: 14px 28px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .choices {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 30px;
+  }
+
+  .choice {
+    width: 160px;
+    font-size: 24px;
+    background: #2563eb;
+    color: white;
+  }
+
+  .choice:hover {
+    background: #1d4ed8;
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 20px;
+  }
+
+  .pause-btn {
+    background: #f59e0b;
+    color: black;
+  }
+
+  .menu-btn {
+    background: #22c55e;
+    color: black;
+  }
+</style>
 </head>
 <body>
 
-<div id="hud">
-  <div id="energy"><div id="energy-bar"></div></div>
+<!-- ===== MENU ===== -->
+<div id="menu" class="screen active">
+  <h1>เกมคณิตศาสตร์</h1>
+  <p>เลือกคำตอบที่ถูก (ซ้าย / ขวา)</p>
+  <button class="menu-btn" onclick="startGame()">เริ่มเกม</button>
 </div>
 
-<div id="game">
-  <div id="tree"></div>
+<!-- ===== GAME ===== -->
+<div id="game" class="screen">
+  <div class="top">
+    <div>เวลา: <span id="time">10</span></div>
+    <div>คะแนน: <span id="score">0</span></div>
+    <button class="pause-btn" onclick="pauseGame()">หยุด</button>
+  </div>
 
-  <div id="block left"></div>
-  <div id="block right"></div>
+  <h2 id="question" style="margin-top:40px"></h2>
 
-  <div id="player"></div>
+  <div class="choices">
+    <button id="leftBtn" class="choice" onclick="choose('left')">0</button>
+    <button id="rightBtn" class="choice" onclick="choose('right')">0</button>
+  </div>
 </div>
 
-<script src="game.js"></script>
+<!-- ===== PAUSE ===== -->
+<div id="pause" class="screen">
+  <h1>หยุดเกม</h1>
+  <button onclick="resumeGame()">เล่นต่อ</button>
+  <button onclick="goMenu()">กลับเมนู</button>
+</div>
+
+<!-- ===== GAME OVER ===== -->
+<div id="over" class="screen">
+  <h1>หมดเวลา</h1>
+  <p>คะแนนของคุณ: <span id="finalScore"></span></p>
+  <button onclick="goMenu()">กลับเมนู</button>
+</div>
+
+<script>
+let score = 0;
+let time = 10;
+let timer = null;
+let correctSide = "left";
+let paused = false;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  score = 0;
+  time = 10;
+  document.getElementById("score").textContent = score;
+  document.getElementById("time").textContent = time;
+  showScreen("game");
+  newQuestion();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timer = setInterval(() => {
+    if (!paused) {
+      time--;
+      document.getElementById("time").textContent = time;
+      if (time <= 0) endGame();
+    }
+  }, 1000);
+}
+
+function randomQuestion() {
+  const ops = ["+", "-", "×", "÷"];
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a = Math.floor(Math.random() * 10) + 1;
+  let b = Math.floor(Math.random() * 10) + 1;
+  let ans;
+
+  if (op === "+") ans = a + b;
+  if (op === "-") ans = a - b;
+  if (op === "×") ans = a * b;
+  if (op === "÷") {
+    ans = a;
+    b = 1 + Math.floor(Math.random() * 9);
+    a = ans * b;
+  }
+
+  return { text: `${a} ${op} ${b} = ?`, answer: ans };
+}
+
+function newQuestion() {
+  const q = randomQuestion();
+  document.getElementById("question").textContent = q.text;
+
+  const wrong = q.answer + (Math.floor(Math.random() * 5) + 1);
+  if (Math.random() < 0.5) {
+    correctSide = "left";
+    leftBtn.textContent = q.answer;
+    rightBtn.textContent = wrong;
+  } else {
+    correctSide = "right";
+    leftBtn.textContent = wrong;
+    rightBtn.textContent = q.answer;
+  }
+}
+
+function choose(side) {
+  if (paused) return;
+  if (side === correctSide) score++;
+  document.getElementById("score").textContent = score;
+  newQuestion();
+}
+
+function pauseGame() {
+  paused = true;
+  showScreen("pause");
+}
+
+function resumeGame() {
+  paused = false;
+  showScreen("game");
+}
+
+function endGame() {
+  clearInterval(timer);
+  document.getElementById("finalScore").textContent = score;
+  showScreen("over");
+}
+
+function goMenu() {
+  clearInterval(timer);
+  paused = false;
+  showScreen("menu");
+}
+</script>
+
 </body>
 </html>
