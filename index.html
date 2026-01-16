@@ -2,17 +2,17 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>Math Combo Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Block Choice</title>
 
 <style>
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  min-height: 100vh;
+  background: #0b0b0b;
+  color: white;
   font-family: system-ui, sans-serif;
-  background: linear-gradient(180deg,#020617,#0f172a);
-  color: #fff;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -22,241 +22,202 @@ body {
   display: none;
   width: 100%;
   max-width: 420px;
-  padding: 20px;
+  text-align: center;
 }
 .active { display: block; }
 
-h1,h2 { text-align: center; }
+h1 { margin-bottom: 20px; }
 
-button {
-  width: 100%;
-  padding: 16px;
-  font-size: 20px;
-  border-radius: 14px;
+.question {
+  font-size: 36px;
+  margin-bottom: 30px;
+}
+
+.buttons {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+.choice {
+  width: 120px;
+  height: 80px;
+  font-size: 28px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
 }
 
-.choice {
-  background: #2563eb;
-  color: white;
-  font-size: 28px;
-}
+.left { background: #f59e0b; }
+.right { background: #2dd4bf; }
 
 .correct { background: #22c55e !important; }
 .wrong { background: #ef4444 !important; }
 
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.info {
+  margin-top: 20px;
   font-size: 16px;
+  opacity: 0.8;
 }
 
-.hearts { color: #ef4444; }
-.boss { color: #f97316; }
-
-.question {
-  font-size: 32px;
-  margin: 30px 0;
-  text-align: center;
+.pause-btn {
+  margin-top: 20px;
+  background: #444;
+  color: white;
+  border-radius: 10px;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
 }
-
-.stack { display: flex; flex-direction: column; gap: 14px; }
-
-.small { font-size: 14px; opacity: .8; text-align: center; }
 </style>
 </head>
 <body>
 
 <!-- MENU -->
 <div id="menu" class="screen active">
-  <h1>Math Combo Game</h1>
-  <p class="small">High Score: <span id="highScore">0</span></p>
-  <button onclick="startGame()">เริ่มเกม</button>
-  <button onclick="toggleSound()">🔊 เสียง: <span id="soundState">ON</span></button>
+  <h1>Math Block Choice</h1>
+  <button class="pause-btn" onclick="startGame()">เริ่มเกม</button>
 </div>
 
 <!-- GAME -->
 <div id="game" class="screen">
-  <div class="top">
-    <div>⏱ <span id="time">10</span></div>
-    <div>Lv.<span id="level">1</span></div>
-    <div class="hearts" id="hearts">❤️❤️❤️</div>
+  <div class="question" id="question">1 + 1</div>
+
+  <div class="buttons">
+    <button id="leftBtn" class="choice left" onclick="choose('left')">0</button>
+    <button id="rightBtn" class="choice right" onclick="choose('right')">0</button>
   </div>
 
-  <div class="top">
-    <div>คะแนน <span id="score">0</span></div>
-    <div>🔥 x<span id="combo">0</span></div>
+  <div class="info">
+    ❤️ <span id="hearts">3</span> |
+    ⏱ <span id="time">10</span>s |
+    Score: <span id="score">0</span>
   </div>
 
-  <div id="bossBar" class="boss small"></div>
+  <button class="pause-btn" onclick="pauseGame()">หยุดเกม</button>
+</div>
 
-  <div class="question" id="question"></div>
-
-  <div class="stack">
-    <button id="leftBtn" class="choice" onclick="choose('left')"></button>
-    <button id="rightBtn" class="choice" onclick="choose('right')"></button>
-    <button onclick="pauseGame()">หยุด</button>
-  </div>
+<!-- PAUSE -->
+<div id="pause" class="screen">
+  <h1>หยุดเกม</h1>
+  <button class="pause-btn" onclick="resumeGame()">▶ เล่นต่อ</button>
+  <button class="pause-btn" onclick="goMenu()">⏹ กลับเมนู</button>
 </div>
 
 <!-- GAME OVER -->
 <div id="over" class="screen">
-  <h2>เกมจบ</h2>
+  <h1>เกมจบ</h1>
   <p>คะแนน: <span id="finalScore"></span></p>
-  <p>High Score: <span id="finalHigh"></span></p>
-  <button onclick="goMenu()">กลับเมนู</button>
+  <button class="pause-btn" onclick="goMenu()">กลับเมนู</button>
 </div>
 
 <script>
-/* ===== SOUND ===== */
-const sndCorrect = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3");
-const sndWrong   = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3");
-const sndBoss    = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-arcade-bonus-alert-767.mp3");
-let soundOn = true;
+let score, hearts, time, timer;
+let correctSide;
+let paused = false;
 
-/* ===== STATE ===== */
-let score, combo, level, hearts, time, timer;
-let correctSide, paused=false;
-let bossHP = 0;
-
-/* ===== UI ===== */
 const $ = id => document.getElementById(id);
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
 }
 
-/* ===== GAME ===== */
-function startGame(){
-  score=0; combo=0; level=1; hearts=3;
+function startGame() {
+  score = 0;
+  hearts = 3;
+  paused = false;
+  updateUI();
   show('game');
   newQuestion();
-  updateUI();
 }
 
-function updateUI(){
-  scoreEl.textContent=score;
-  comboEl.textContent=combo;
-  levelEl.textContent=level;
-  heartsEl.textContent="❤️".repeat(hearts);
+function updateUI() {
+  $('score').textContent = score;
+  $('hearts').textContent = hearts;
 }
 
-function startTimer(limit){
+function startTimer() {
   clearInterval(timer);
-  time=limit;
-  timeEl.textContent=time;
-  timer=setInterval(()=>{
-    if(!paused){
+  time = 10;
+  $('time').textContent = time;
+
+  timer = setInterval(() => {
+    if (!paused) {
       time--;
-      timeEl.textContent=time;
-      if(time<=0) loseLife();
+      $('time').textContent = time;
+      if (time <= 0) loseLife();
     }
-  },1000);
+  }, 1000);
 }
 
-function randomQuestion(){
-  let max=10+level*5;
-  let ops=["+","-"];
-  if(level>=2) ops.push("×");
-  if(level>=4) ops.push("÷");
+function newQuestion() {
+  const a = Math.floor(Math.random() * 9) + 1;
+  const b = Math.floor(Math.random() * 9) + 1;
+  const answer = a * b;
 
-  let op=ops[Math.floor(Math.random()*ops.length)];
-  let a=Math.floor(Math.random()*max)+1;
-  let b=Math.floor(Math.random()*max)+1;
-  let ans;
+  $('question').textContent = `${a} × ${b}`;
 
-  if(op==="+") ans=a+b;
-  if(op==="-") ans=a-b;
-  if(op==="×") ans=a*b;
-  if(op==="÷"){ ans=Math.floor(Math.random()*max)+1; b=Math.floor(Math.random()*max)+1; a=ans*b; }
+  const wrong = answer + Math.floor(Math.random() * 5) + 1;
 
-  return {text:`${a} ${op} ${b} = ?`,answer:ans};
-}
-
-function newQuestion(){
-  const bossFight = level%5===0;
-  if(bossFight && bossHP===0){
-    bossHP=5;
-    sndBoss.play();
+  if (Math.random() < 0.5) {
+    correctSide = 'left';
+    leftBtn.textContent = answer;
+    rightBtn.textContent = wrong;
+  } else {
+    correctSide = 'right';
+    leftBtn.textContent = wrong;
+    rightBtn.textContent = answer;
   }
 
-  bossBar.textContent = bossFight ? `🧟‍♂️ บอส HP: ${bossHP}` : "";
-
-  const q=randomQuestion();
-  question.textContent=q.text;
-  const wrong=q.answer+Math.floor(Math.random()*level+1);
-
-  if(Math.random()<0.5){
-    correctSide='left';
-    leftBtn.textContent=q.answer;
-    rightBtn.textContent=wrong;
-  }else{
-    correctSide='right';
-    leftBtn.textContent=wrong;
-    rightBtn.textContent=q.answer;
-  }
-
-  startTimer(bossFight?5:10);
+  startTimer();
 }
 
-function choose(side){
-  if(paused) return;
-  const btn=side==='left'?leftBtn:rightBtn;
+function choose(side) {
+  if (paused) return;
 
-  if(side===correctSide){
+  const btn = side === 'left' ? leftBtn : rightBtn;
+
+  if (side === correctSide) {
     btn.classList.add('correct');
-    if(soundOn) sndCorrect.play();
-    score+=10; combo++;
-
-    if(level%5===0){
-      bossHP--;
-      if(bossHP<=0){ level++; bossHP=0; }
-    }else if(combo%5===0){ level++; }
-
-    setTimeout(()=>btn.classList.remove('correct'),200);
+    score++;
+    setTimeout(() => btn.classList.remove('correct'), 200);
     newQuestion();
-  }else{
+  } else {
     btn.classList.add('wrong');
-    if(soundOn) sndWrong.play();
-    setTimeout(()=>btn.classList.remove('wrong'),200);
+    setTimeout(() => btn.classList.remove('wrong'), 200);
     loseLife();
   }
   updateUI();
 }
 
-function loseLife(){
-  hearts--; combo=0;
-  if(hearts<=0) endGame();
+function loseLife() {
+  hearts--;
+  if (hearts <= 0) endGame();
   else newQuestion();
 }
 
-function endGame(){
+function pauseGame() {
+  paused = true;
+  show('pause');
+}
+
+function resumeGame() {
+  paused = false;
+  show('game');
+}
+
+function endGame() {
   clearInterval(timer);
-  finalScore.textContent=score;
-  let hs=localStorage.getItem("mathHigh")||0;
-  if(score>hs){ hs=score; localStorage.setItem("mathHigh",hs); }
-  finalHigh.textContent=hs;
+  $('finalScore').textContent = score;
   show('over');
 }
 
-function toggleSound(){
-  soundOn=!soundOn;
-  soundState.textContent=soundOn?"ON":"OFF";
-}
-
-function goMenu(){
-  highScore.textContent=localStorage.getItem("mathHigh")||0;
+function goMenu() {
+  clearInterval(timer);
+  paused = false;
   show('menu');
 }
-
-/* refs */
-const timeEl=$("time"),scoreEl=$("score"),comboEl=$("combo"),
-levelEl=$("level"),heartsEl=$("hearts"),question=$("question"),
-leftBtn=$("leftBtn"),rightBtn=$("rightBtn"),bossBar=$("bossBar");
-
-highScore.textContent=localStorage.getItem("mathHigh")||0;
 </script>
 
 </body>
